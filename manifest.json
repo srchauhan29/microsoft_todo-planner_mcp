@@ -1,0 +1,222 @@
+{
+  "manifest_version": "0.4",
+  "name": "todo-planner",
+  "display_name": "Microsoft To Do & Planner",
+  "version": "0.2.0",
+  "description": "Create, update and delete Microsoft To Do and Microsoft Planner tasks, lists and plans from Claude.",
+  "long_description": "Manage your **Microsoft To Do** lists and tasks and **Microsoft Planner** plans, buckets and tasks through Microsoft Graph, as the signed-in Microsoft 365 user.\n\n**Sign-in:** after installing, ask Claude *\"Log in to To Do\"* and choose either your organisation's own Entra app registration or the Microsoft-published *Microsoft Graph Command Line Tools* app. Your browser opens for Microsoft sign-in and MFA. No passwords or secrets are stored; tokens are cached per user, encrypted with Windows DPAPI. If the session expires, the sign-in window opens automatically.\n\n**Time zone** is detected from your Microsoft 365 settings (or this computer).\n\n**Requires** [uv](https://docs.astral.sh/uv/) on this computer; it installs Python and the dependencies automatically on first start.\n\nExample prompts:\n- To Do: 'Show my To Do lists' | 'Create a To Do list called Client Onboarding' | 'Add a task Renew SSL certificate to my Tasks list, due Friday, high importance' | 'What's still open in my Work list?' | 'Mark Renew SSL certificate as completed' | 'Add checklist steps to that task: backup, renew, verify' | 'Move it to the Admin list' | 'Delete the Old ideas list'\n- Planner: 'Show my Planner tasks' | 'List my plans' | 'Create a plan M365 Migration in the IT Projects group with buckets Discovery, Build, Cutover' | 'Add a task Licensing audit to M365 Migration in Discovery, assign to me, due 2026-11-01, priority important' | 'Move Licensing audit to Build and set it in progress' | 'Rename the Cutover bucket to Go-live'\n- Account: 'Check my To Do sign-in status' | 'Log in to To Do' | 'Turn off automatic sign-in'",
+  "author": {
+    "name": "Augmented Systems"
+  },
+  "icon": "icon.png",
+  "server": {
+    "type": "uv",
+    "entry_point": "run_server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${__dirname}",
+        "--frozen",
+        "--no-dev",
+        "run_server.py"
+      ],
+      "env": {
+        "UV_PYTHON_INSTALL_DIR": "${HOME}/.local/share/uv/python",
+        "TODO_MCP_CLIENT_ID": "${user_config.client_id}",
+        "TODO_MCP_TENANT_ID": "${user_config.tenant}",
+        "TODO_MCP_TIMEZONE": "${user_config.timezone}",
+        "TODO_MCP_AUTO_LOGIN": "${user_config.auto_login}",
+        "TODO_MCP_EXTRA_SCOPES": "${user_config.extra_scopes}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "planner_list_my_groups",
+      "description": "List Microsoft 365 groups the user belongs to (needed as the container when creating a plan)."
+    },
+    {
+      "name": "planner_list_plans",
+      "description": "List Planner plans (projects) shared with the signed-in user, with their group IDs."
+    },
+    {
+      "name": "planner_create_plan",
+      "description": "Create a Planner plan (project) in a Microsoft 365 group, optionally with initial buckets"
+    },
+    {
+      "name": "planner_rename_plan",
+      "description": "Rename a Planner plan. plan_ref is the plan ID or exact title."
+    },
+    {
+      "name": "planner_delete_plan",
+      "description": "Permanently delete a Planner plan with ALL its buckets and tasks. Confirm with the user first."
+    },
+    {
+      "name": "planner_list_buckets",
+      "description": "List buckets (columns) in a Planner plan."
+    },
+    {
+      "name": "planner_create_bucket",
+      "description": "Create a bucket in a Planner plan."
+    },
+    {
+      "name": "planner_rename_bucket",
+      "description": "Rename a bucket in a Planner plan."
+    },
+    {
+      "name": "planner_delete_bucket",
+      "description": "Permanently delete a bucket and ALL tasks in it. Confirm with the user first."
+    },
+    {
+      "name": "planner_list_tasks",
+      "description": "List tasks in a Planner plan, optionally filtered by bucket, completion and assignment."
+    },
+    {
+      "name": "planner_my_tasks",
+      "description": "List Planner tasks assigned to the signed-in user across all plans."
+    },
+    {
+      "name": "planner_get_task",
+      "description": "Get a Planner task including description and checklist."
+    },
+    {
+      "name": "planner_create_task",
+      "description": "Create a Planner task. assignees: 'me', user object IDs, or emails. labels: label names"
+    },
+    {
+      "name": "planner_update_task",
+      "description": "Update a Planner task. Only supplied fields change. Empty string for due/start clears it."
+    },
+    {
+      "name": "planner_delete_task",
+      "description": "Permanently delete a Planner task. Confirm with the user first."
+    },
+    {
+      "name": "todo_list_lists",
+      "description": "List all Microsoft To Do task lists (projects) for the signed-in user."
+    },
+    {
+      "name": "todo_create_list",
+      "description": "Create a new Microsoft To Do task list (project)."
+    },
+    {
+      "name": "todo_rename_list",
+      "description": "Rename a To Do list. list_ref is the list ID or its exact name."
+    },
+    {
+      "name": "todo_delete_list",
+      "description": "Permanently delete a To Do list AND all tasks in it. Confirm with the user first."
+    },
+    {
+      "name": "todo_list_tasks",
+      "description": "List tasks in a To Do list. list_ref is the list ID or exact name (e.g. 'Tasks')."
+    },
+    {
+      "name": "todo_get_task",
+      "description": "Get one To Do task with notes and checklist items."
+    },
+    {
+      "name": "todo_create_task",
+      "description": "Create a task in a To Do list. Dates: YYYY-MM-DD or YYYY-MM-DDTHH:MM (local time)."
+    },
+    {
+      "name": "todo_update_task",
+      "description": "Update a To Do task. Only supplied fields change. Pass an empty string for a date to clear it."
+    },
+    {
+      "name": "todo_delete_task",
+      "description": "Permanently delete a To Do task. Confirm with the user first."
+    },
+    {
+      "name": "todo_move_task",
+      "description": "Move a task to another To Do list (copies title, notes, dates, importance, status,"
+    },
+    {
+      "name": "todo_add_checklist_item",
+      "description": "Add a checklist (sub-step) item to a To Do task."
+    },
+    {
+      "name": "todo_update_checklist_item",
+      "description": "Rename and/or tick/untick a checklist item on a To Do task."
+    },
+    {
+      "name": "todo_delete_checklist_item",
+      "description": "Delete a checklist item from a To Do task. Confirm with the user first."
+    },
+    {
+      "name": "auth_status",
+      "description": "Show which sign-in app and Microsoft 365 account are in use and whether a valid token is available."
+    },
+    {
+      "name": "auto_login",
+      "description": "Turn automatic sign-in on or off. When on (default), an expired Microsoft 365 session"
+    },
+    {
+      "name": "login",
+      "description": "Sign in to Microsoft 365. Opens the system browser on this computer for sign-in/MFA."
+    }
+  ],
+  "keywords": [
+    "microsoft-to-do",
+    "planner",
+    "microsoft-365",
+    "tasks",
+    "graph"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/srchauhan29/microsoft_todo-planner_mcp"
+  },
+  "privacy_policies": [
+    "https://privacy.microsoft.com/privacystatement"
+  ],
+  "compatibility": {
+    "platforms": [
+      "win32",
+      "darwin"
+    ],
+    "runtimes": {
+      "python": ">=3.11"
+    }
+  },
+  "user_config": {
+    "client_id": {
+      "type": "string",
+      "title": "Own app registration client ID (optional)",
+      "description": "Leave blank to choose at sign-in. Set it to force your organisation's own Entra app (option 1) for everyone using this install. Not a secret.",
+      "required": false,
+      "default": ""
+    },
+    "tenant": {
+      "type": "string",
+      "title": "Tenant ID or domain (optional)",
+      "description": "Restricts sign-in to your tenant, e.g. contoso.com.au. Recommended if you also have accounts in customer tenants. Leave blank to use the value chosen at sign-in.",
+      "required": false,
+      "default": ""
+    },
+    "timezone": {
+      "type": "string",
+      "title": "Time zone",
+      "description": "'auto' detects it from Microsoft 365 (then Windows). Or an IANA zone such as Australia/Sydney.",
+      "required": false,
+      "default": "auto"
+    },
+    "auto_login": {
+      "type": "boolean",
+      "title": "Open sign-in automatically when the session expires",
+      "description": "Opens the Microsoft sign-in page in your browser when needed; the request then continues.",
+      "required": false,
+      "default": true
+    },
+    "extra_scopes": {
+      "type": "string",
+      "title": "Extra Graph permissions (optional)",
+      "description": "Space-separated, e.g. 'GroupMember.Read.All User.ReadBasic.All' to list groups and assign tasks by email. Sign in again after changing.",
+      "required": false,
+      "default": ""
+    }
+  }
+}

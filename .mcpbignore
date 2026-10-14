@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+dist/
+.git/
+scripts/
+install.ps1
+claude_desktop_config.example.json
+*.bak
