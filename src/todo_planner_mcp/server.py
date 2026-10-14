@@ -38,6 +38,15 @@ def _apply_choice(app: str, client_id: str | None, tenant: str | None, timezone:
     return saved
 
 
+def _same_choice(saved: dict, app: str, client_id: str | None, tenant: str | None) -> bool:
+    """True if the requested sign-in app/tenant matches what is already saved (a harmless re-login)."""
+    if saved.get("app") != app:
+        return False
+    if app == "own" and (client_id or "").strip().lower() != saved.get("client_id", "").lower():
+        return False
+    return not tenant or tenant.strip().lower() == saved.get("tenant_id", "").lower()
+
+
 # ---------------------------------------------------------------- MCP tools
 
 @tool(READ_ONLY)
@@ -95,8 +104,19 @@ async def login(
                            any work account); suggest pinning their domain to avoid signing in
                            to the wrong (e.g. customer) tenant.
     timezone: 'auto' (default - the user's Microsoft 365 time zone, else this computer's) or an
-    IANA zone such as Australia/Sydney. Omit app to reuse the saved choice."""
+    IANA zone such as Australia/Sydney. Omit app to reuse the saved choice.
+    Once a sign-in app is configured it can't be changed from chat (only re-signed into); the user
+    changes it with `todo-planner-mcp login` in a terminal or in the extension settings."""
     if app:
+        saved = read_saved()
+        if saved.get("client_id") and not _same_choice(saved, app, client_id, tenant):
+            # Security: stop instructions injected via task content from silently pointing sign-in
+            # at a different (possibly attacker-owned) app registration or tenant (consent phishing).
+            raise ConfigError(
+                "A sign-in app is already configured. For safety it can't be changed from chat. "
+                "Ask the user to run `uv run todo-planner-mcp login` in a terminal (or change the "
+                "extension settings in Claude Desktop), then try again."
+            )
         await reset_ctx()
         await anyio.to_thread.run_sync(_apply_choice, app, client_id, tenant, timezone)
     c = ctx()

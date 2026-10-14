@@ -65,7 +65,22 @@ This generates `manifest.json` from the live tool list and `pyproject.toml`, val
 - **Encrypted token cache** – MSAL tokens are stored with `msal-extensions`, encrypted with Windows DPAPI under your user profile (`%USERPROFILE%\.todo-planner-mcp\msal_token_cache.bin`). Nothing is written to the repo.
 - **MFA / Conditional Access honoured** – sign-in happens in the system browser against your tenant.
 - **Least privilege** – default scopes are `User.Read` + `Tasks.ReadWrite`. Extra scopes are opt-in.
-- Bearer tokens are only ever sent to `https://graph.microsoft.com`. Logs go to stderr and never contain tokens.
+- **Tokens only go to Graph:** bearer tokens are only ever sent to `https://graph.microsoft.com/v1.0/`. The server checks the parsed scheme, host, port and path, so look-alike URLs are refused. Logs go to stderr and never contain tokens.
+- **Prompt-injection guard:** task titles and notes in shared lists and plans are written by other people. Claude is told to treat them as data and never follow instructions inside them. The sign-in app and tenant can't be changed from chat once configured, only from the terminal or the extension settings, which blocks consent-phishing via injected text.
+- **Pinned dependencies:** every launch uses `uv … --frozen`, so only the hash-pinned versions in `uv.lock` are installed.
+
+### Recommended settings
+
+- In Claude, **don't choose "Always allow"** for the `*_delete_*` tools, so every delete still needs your click.
+- With option 2, **pin your tenant** (`--tenant yourdomain`) rather than using `organizations`, especially if you also have accounts in customer tenants.
+- Prefer **option 1** (your own app registration) for managed or MSP use. You can then apply Conditional Access, assignment requirements and sign-in log filtering to it alone.
+- The optional permissions (`GroupMember.Read.All`, `User.ReadBasic.All`, `MailboxSettings.Read`) are read-only. Only grant the ones you use.
+
+### Known limitations
+
+- Anyone who can run code as your Windows user can use your cached session. That's the same trust boundary as Outlook and Teams; DPAPI protects the cache from other users and offline copies, not from malware running as you.
+- `planner_list_my_groups` with `GroupMember.Read.All` returns all your group memberships to Claude.
+- If uv is missing and winget isn't available, `install.ps1` falls back to astral.sh's official install script (HTTPS, after asking you).
 
 ## 1. Choose how to sign in
 
@@ -167,7 +182,7 @@ The entry needs no IDs, because the server reads the saved login choice (see [`c
 "mcpServers": {
   "todo-planner": {
     "command": "C:\\Users\\<you>\\.local\\bin\\uv.exe",
-    "args": ["run", "--directory", "C:\\Github\\ToDo-MCP", "todo-planner-mcp"]
+    "args": ["run", "--frozen", "--directory", "C:\\Github\\ToDo-MCP", "todo-planner-mcp"]
   }
 }
 ```
@@ -175,7 +190,7 @@ The entry needs no IDs, because the server reads the saved login choice (see [`c
 For **Claude Code** instead:
 
 ```bash
-claude mcp add todo-planner --scope user -- uv run --directory C:\Github\ToDo-MCP todo-planner-mcp
+claude mcp add todo-planner --scope user -- uv run --frozen --directory C:\Github\ToDo-MCP todo-planner-mcp
 ```
 
 ## Configuration

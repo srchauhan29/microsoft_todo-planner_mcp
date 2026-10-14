@@ -53,7 +53,7 @@ def config_paths() -> list[Path]:
 
 def server_entry() -> dict:
     uv = shutil.which("uv") or str(Path.home() / ".local" / "bin" / "uv.exe")
-    return {"command": uv, "args": ["run", "--directory", str(REPO), "todo-planner-mcp"]}
+    return {"command": uv, "args": ["run", "--frozen", "--directory", str(REPO), "todo-planner-mcp"]}
 
 
 def main() -> int:

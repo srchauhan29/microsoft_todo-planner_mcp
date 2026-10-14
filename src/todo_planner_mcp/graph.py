@@ -45,9 +45,17 @@ class GraphClient:
         token: str | None = None,
     ) -> dict[str, Any] | None:
         url = path if path.startswith("https://") else f"{self._base}{path}"
-        if not url.startswith(self._base):
-            # Only ever send the bearer token to Microsoft Graph.
-            raise ValueError(f"Refusing to call non-Graph URL: {url}")
+        # Only ever send the bearer token to Microsoft Graph: compare the parsed scheme, host and
+        # port (not a string prefix) so look-alike URLs, userinfo tricks or other ports are refused.
+        target, base = httpx.URL(url), httpx.URL(self._base)
+        if (
+            target.scheme != "https"
+            or target.host != base.host
+            or target.port not in (None, 443)
+            or target.userinfo
+            or not target.path.startswith(base.path.rstrip("/") + "/")
+        ):
+            raise ValueError("Refusing to send credentials to a non-Microsoft Graph URL.")
 
         for attempt in range(_MAX_RETRIES + 1):
             bearer = token or await anyio.to_thread.run_sync(self._tokens.get_token)

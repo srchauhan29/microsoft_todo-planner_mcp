@@ -120,12 +120,25 @@ function Get-UvPath {
 
 function Install-Uv {
     Write-Note 'uv is not installed. It installs per-user into %USERPROFILE%\.local\bin (no admin rights, no MSI).'
-    if (-not (Confirm-Action 'Install uv now from the official installer (https://astral.sh/uv)?')) {
+    if (-not (Confirm-Action 'Install uv now?')) {
         throw 'uv is required. Install it from https://docs.astral.sh/uv/ and re-run this script.'
     }
-    $installer = Invoke-RestMethod -Uri 'https://astral.sh/uv/install.ps1' -UseBasicParsing
-    Invoke-Expression $installer
-    $uv = Get-UvPath
+    $uv = $null
+    if (Get-Command winget -ErrorAction SilentlyContinue) {
+        # Preferred: winget verifies the download's SHA-256 against the community-reviewed manifest.
+        Write-Note 'Installing uv with winget (hash-verified, per-user)...'
+        Invoke-Soft 'winget' @('install', '--id', 'astral-sh.uv', '--exact', '--source', 'winget', '--scope', 'user',
+            '--silent', '--accept-package-agreements', '--accept-source-agreements') | Out-Host
+        $env:Path = [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + $env:Path
+        $uv = Get-UvPath
+    }
+    if (-not $uv) {
+        # Fallback: the official installer from astral.sh over HTTPS (no independent hash check).
+        Write-Note 'Installing uv with the official installer from https://astral.sh/uv ...'
+        $installer = Invoke-RestMethod -Uri 'https://astral.sh/uv/install.ps1' -UseBasicParsing
+        Invoke-Expression $installer
+        $uv = Get-UvPath
+    }
     if (-not $uv) { throw 'uv installation did not produce uv.exe. Open a new terminal and re-run.' }
     $env:Path = (Split-Path $uv) + ';' + $env:Path
     return $uv
@@ -228,7 +241,7 @@ if ($ClaudeCode) {
     Write-Step 'Registering with Claude Code'
     if (Get-Command claude -ErrorAction SilentlyContinue) {
         Invoke-Soft 'claude' @('mcp', 'remove', 'todo-planner', '--scope', 'user') | Out-Null
-        Invoke-Native 'claude' @('mcp', 'add', 'todo-planner', '--scope', 'user', '--', $uv, 'run', '--directory', $ProjectDir, 'todo-planner-mcp') 'Claude Code registration'
+        Invoke-Native 'claude' @('mcp', 'add', 'todo-planner', '--scope', 'user', '--', $uv, 'run', '--frozen', '--directory', $ProjectDir, 'todo-planner-mcp') 'Claude Code registration'
         Write-Ok 'Registered (user scope)'
     } else {
         Write-Note 'Claude Code CLI (claude) not found on PATH - skipped.'

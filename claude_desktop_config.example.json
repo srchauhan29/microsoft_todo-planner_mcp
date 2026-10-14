@@ -2,7 +2,7 @@
   "mcpServers": {
     "todo-planner": {
       "command": "C:\\Users\\<you>\\.local\\bin\\uv.exe",
-      "args": ["run", "--directory", "C:\\Github\\ToDo-MCP", "todo-planner-mcp"]
+      "args": ["run", "--frozen", "--directory", "C:\\Github\\ToDo-MCP", "todo-planner-mcp"]
     }
   }
 }
